@@ -8,7 +8,9 @@ using System;
 using System.Collections.Generic;
 using System.ComponentModel.Design;
 using System.Globalization;
+using System.IO;
 using System.Linq;
+using System.Windows.Forms;
 using EnvDTE;
 using EnvDTE80;
 using Microsoft.VisualStudio.Shell;
@@ -100,7 +102,7 @@ namespace EFToDTO
             const string modelConvensionName = "Model";
             const string dtoConvensionName = "Dto";
             var modelProject = HelperClass.Projects().FirstOrDefault(p=>p.Name.Contains(modelConvensionName));
-            var dtoProject = HelperClass.Projects().FirstOrDefault(p => p.Name.Contains(dtoConvensionName));
+            var dtoProject = HelperClass.Projects().FirstOrDefault(p => p.Name.Contains(dtoConvensionName));            
             
             var modelItems = HelperClass.GetProjectItemsOnlyClasses(modelProject?.ProjectItems);
 
@@ -186,6 +188,11 @@ namespace EFToDTO
                         classProperties.Add("      }");
                         classProperties.Add("}");
 
+                        //dtoProject.CodeModel.AddClass(baseDtoClassName, dtoProject.Name, -1,
+                        //    new object[] {"System.Object"}, null, vsCMAccess.vsCMAccessPublic);
+                        //dtoProject.CodeModel.AddVariable("id", dtoProject.Name + baseDtoClassName, "int", null,
+                        //    vsCMAccess.vsCMAccessPublic);
+
                         generatedDtoCatalog.Add(new KeyValuePair<string, List<string>>(baseDtoClassName, classProperties));
 
                         if (!classDte.IsAbstract)
@@ -225,7 +232,7 @@ namespace EFToDTO
                             generatedDtoCatalog.Add(
                                 new KeyValuePair<string, List<string>>(getDtoClassName, classProperties));
 
-                            var updateDtoClassName = className + "Get" + dtoConvensionName;
+                            var updateDtoClassName = className + "Update" + dtoConvensionName;
 
                             classProperties = new List<string>
                             {
@@ -248,12 +255,17 @@ namespace EFToDTO
                 }
             }
 
-            //System.Windows.Forms.MessageBox.Show("Model Project: " + modelProject?.Name);
-            //System.Windows.Forms.MessageBox.Show("Dto Project: " + dtoProject?.Name);
+            var askFolder = new FolderBrowserDialog();
+            if (askFolder.ShowDialog() == DialogResult.OK)
+            {
+                var filePath = askFolder.SelectedPath;
+                foreach (var currentClass in generatedDtoCatalog)
+                {
+                    File.WriteAllLines(filePath +"\\"+ currentClass.Key + ".cs", currentClass.Value);
+                }
+            }
 
-            //var startupProj = dte.Solution.Item(msg);
-            //System.Windows.Forms.MessageBox.Show("Full name of solution's startup project: " + "/n" + startupProj.FullName);
-
+            MessageBox.Show("Dtos generated for " + dtoProject?.Name);
         }
     }
 }
